@@ -8,9 +8,31 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Numerics;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Ping_pong
 {
+    public enum PlateDirection
+    {
+        up,
+        no,
+        down
+    }
+    public enum PlateSide
+    {
+        left,
+        right
+    }
+    public enum BallDirection
+    {
+        leftUp,
+        left,
+        leftDown,
+        rightUp,
+        right,
+        rightDown
+    }
     class Program
     {
         public const int ScreenWidth = 120;
@@ -21,7 +43,11 @@ namespace Ping_pong
            
             char[,] playingField = new char[ScreenHeight, ScreenWidth];
             Console.CursorVisible = false;
+            Console.SetBufferSize(ScreenWidth, ScreenHeight);
+            Console.SetWindowSize(ScreenWidth, ScreenHeight);
+            GamePerformer.PlateControl();
             GamePerformer.GameShow();
+            
             // Console.WriteLine("сервер?");
             //string m = Console.ReadLine();
             //if (m == "y")
@@ -40,17 +66,48 @@ namespace Ping_pong
             // сonnection.TransferGameData();
         }
     }
-
     static class GamePerformer
     {
+        private static readonly Dictionary<string, PlateDirection> arrowDirection
+            = new Dictionary<string, PlateDirection>()
+            {
+                { "UpArrow" , PlateDirection.up },
+                { "DownArrow" , PlateDirection.down },
+            };
         public static char[,] playingField = new char[30, 120];
+        private static PlateDirection currentPlateDirection = PlateDirection.no;
+        private static string c = String.Empty;
+
+        public static void PlateControl()
+        {
+            new Thread(() =>
+            {
+                while (true)
+                {
+                    if (Console.KeyAvailable)
+                    {
+                        c = Console.ReadKey().Key.ToString();
+                        if (c == "UpArrow" || c == "DownArrow")
+                        {
+                            currentPlateDirection = arrowDirection[c];
+                        }
+                    }
+                    else
+                    {
+                        currentPlateDirection = PlateDirection.no;
+                    }
+                    Thread.Sleep(1);
+                }
+            }).Start();
+        }
         public static void GameShow()
         {
             Plate userPlate = new Plate();
             Plate opponentPlate = new Plate();
             Ball ball = new Ball();
+            
 
-            Console.SetBufferSize(Program.ScreenWidth, Program.ScreenHeight);
+
             while (true)
             {
                 for (int i = 0; i < 30; i++)
@@ -60,10 +117,13 @@ namespace Ping_pong
                         playingField[i, j] = ' ';
                     }
                 }
-                userPlate.RenderingLeftPlate(playingField, 15);
-                opponentPlate.RenderingRightPlate(playingField, 15);
-                ball.move(playingField);
+
                 
+
+
+                userPlate.Move(playingField, PlateSide.left, currentPlateDirection);
+                opponentPlate.Move(playingField, PlateSide.right, PlateDirection.no);
+                ball.Move(playingField);
 
 
                 string temp = String.Empty;
@@ -84,67 +144,86 @@ namespace Ping_pong
                 }
                 Console.Clear();
                 Console.Write(temp);
-                System.Threading.Thread.Sleep(3);
-                
-                
-               
+                System.Threading.Thread.Sleep(1);
+
+
+
             }
         }
+
+        
     }
-    
     class Plate
     {
+        private readonly int minimumPosition = 3;
+        private readonly int maximumPosition = 26;
         private int position;
         private readonly int StartPosition = 15;
         public Plate()
         {
             position = StartPosition;
         }
+        public char[,] Move(char[,] playingField, PlateSide plateSide, PlateDirection plateDirection)
+        {
+            switch (plateDirection)
+            {
+                case PlateDirection.up:
+                    if (position > minimumPosition)
+                    {
+                        position -= 1;
+                    }
+                    break;
+                case PlateDirection.down:
+                    if (position < maximumPosition)
+                    {
+                        position += 1;
+                    }
+                    break;
+            }
+
+            return plateSide switch
+            {
+                PlateSide.left => RenderingLeftPlate(playingField),
+                PlateSide.right => RenderingRightPlate(playingField),
+                _ => playingField,
+            };
+        }
         public char[,] RenderingLeftPlate(char[,] playingField)
         {
-            playingField[position - 3, 0] = '#';
             playingField[position - 3, 1] = '#';
-            playingField[position - 2, 0] = '#';
+            playingField[position - 3, 2] = '#';
             playingField[position - 2, 1] = '#';
-            playingField[position - 1, 0] = '#';
+            playingField[position - 2, 2] = '#';
             playingField[position - 1, 1] = '#';
-            playingField[position, 0] = '#';
+            playingField[position - 1, 2] = '#';
             playingField[position, 1] = '#';
-            playingField[position + 1, 0] = '#';
+            playingField[position, 2] = '#';
             playingField[position + 1, 1] = '#';
-            playingField[position + 2, 0] = '#';
+            playingField[position + 1, 2] = '#';
             playingField[position + 2, 1] = '#';
-            playingField[position + 3, 0] = '#';
+            playingField[position + 2, 2] = '#';
             playingField[position + 3, 1] = '#';
+            playingField[position + 3, 2] = '#';
             return playingField;
         }
-        public char[,] RenderingRightPlate(char[,] playingField, int position)
+        public char[,] RenderingRightPlate(char[,] playingField)
         {
+            playingField[position - 3, 117] = '#';
             playingField[position - 3, 118] = '#';
-            playingField[position - 3, 119] = '#';
+            playingField[position - 2, 117] = '#';
             playingField[position - 2, 118] = '#';
-            playingField[position - 2, 119] = '#';
+            playingField[position - 1, 117] = '#';
             playingField[position - 1, 118] = '#';
-            playingField[position - 1, 119] = '#';
+            playingField[position, 117] = '#';
             playingField[position, 118] = '#';
-            playingField[position, 119] = '#';
+            playingField[position + 1, 117] = '#';
             playingField[position + 1, 118] = '#';
-            playingField[position + 1, 119] = '#';
+            playingField[position + 2, 117] = '#';
             playingField[position + 2, 118] = '#';
-            playingField[position + 2, 119] = '#';
+            playingField[position + 3, 117] = '#';
             playingField[position + 3, 118] = '#';
-            playingField[position + 3, 119] = '#';
             return playingField;
         }
-    }
-    public enum BallDirection
-    {
-        leftUp,
-        left,
-        leftDown,
-        rightUp,
-        right,
-        rightDown
     }
     class Ball
     {
@@ -174,8 +253,28 @@ namespace Ping_pong
         {
             InitializationState();
         }
-        public char[,] move(char[,] playingField)
+        private bool IsLeftMiddle()
         {
+            if (GamePerformer.playingField[y + 3, x - 3] == '#'
+                && GamePerformer.playingField[y - 3, x - 3] == '#')
+            {
+                return true;
+            }
+            return false;
+        }
+        private bool IsRightMiddle()
+        {
+            if (GamePerformer.playingField[y + 3, x + 3] == '#'
+                && GamePerformer.playingField[y - 3, x + 3] == '#')
+            {
+                return true;
+            }
+            return false;
+        }
+        public char[,] Move(char[,] playingField)
+        {
+           
+
             switch (moveDirection)
             {
                 case BallDirection.leftUp:
@@ -201,19 +300,71 @@ namespace Ping_pong
                     y -= 1;
                     break;
             }
+
             if (y == 1 || y == 28)
             {
                 moveDirection = wallRebound[moveDirection];
             }
-            if (GamePerformer.playingField[y, x - 3] == '#' || GamePerformer.playingField[y, x + 3] == '#')
+            else if (GamePerformer.playingField[y, x - 3] == '#' || GamePerformer.playingField[y, x + 3] == '#')
             {
-                moveDirection = plateRebound[moveDirection];
+                if (moveDirection == BallDirection.left)
+                {
+                    if (IsLeftMiddle())
+                    {
+                        moveDirection = BallDirection.right;
+                    }
+                    else if (GamePerformer.playingField[y + 3, x - 3] == ' ')
+                    {
+                        moveDirection = BallDirection.rightUp;
+                    }
+                    else if (GamePerformer.playingField[y - 3, x - 3] == ' ')
+                    {
+                        moveDirection = BallDirection.rightDown;
+                    }
+                }
+                else if (moveDirection == BallDirection.right)
+                {
+                    if (IsRightMiddle())
+                    {
+                        moveDirection = BallDirection.left;
+                    }
+                    else if (GamePerformer.playingField[y + 3, x + 3] == ' ')
+                    {
+                        moveDirection = BallDirection.rightUp;
+                    }
+                    else if (GamePerformer.playingField[y - 3, x + 3] == ' ')
+                    {
+                        moveDirection = BallDirection.rightDown;
+                    }
+                }
+                else
+                {
+                    if ((moveDirection == BallDirection.leftUp
+                        || moveDirection == BallDirection.leftDown)
+                        && IsLeftMiddle())
+                    {
+                        moveDirection = BallDirection.right;
+                    }
+                    else if ((moveDirection == BallDirection.rightUp
+                        || moveDirection == BallDirection.rightDown)
+                        && IsRightMiddle())
+                    {
+                        moveDirection = BallDirection.left;
+                    }
+                    else
+                    {
+                        moveDirection = plateRebound[moveDirection];
+                    }
+                }
             }
-            if (x - 3 == 0 || x + 3 == 119)
+            else if (x - 3 == 0 || x + 3 == 119)
             {
                 InitializationState();
             }
-                return RenderingBall(playingField);
+
+            return RenderingBall(playingField);
+        
+
         }
         private void InitializationState()
         {
@@ -238,14 +389,10 @@ namespace Ping_pong
             return playingField;
         }
     }
-
-
-
     abstract class Сonnection
     {
         abstract public void TransferGameData();
     }
-
     class ServerСonnection : Сonnection
     {
         TcpListener serverSocket;
