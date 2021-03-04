@@ -33,37 +33,50 @@ namespace Ping_pong
         right,
         rightDown
     }
+    public enum Signal : byte
+    {
+        Start,
+        Process,
+        End,
+    }
+
     class Program
     {
         public const int ScreenWidth = 120;
         public const int ScreenHeight = 30;
+        public static Сonnection сonnection = null;
         static void Main(string[] args)
         {
-            Сonnection сonnection = null;
-           
             char[,] playingField = new char[ScreenHeight, ScreenWidth];
             Console.CursorVisible = false;
-            Console.SetBufferSize(ScreenWidth, ScreenHeight);
+
             Console.SetWindowSize(ScreenWidth, ScreenHeight);
+            Console.SetBufferSize(ScreenWidth, ScreenHeight);
+
+
+            Console.Write("Создать сервер? yes/no [yes]");
+            string m = Console.ReadLine();
+            if (m == "y" || m == "yes")
+            {
+                сonnection = new ServerСonnection();
+            }
+            else if (m == "n" || m == "no")
+            {
+                сonnection = new ClientСonnection();
+            }
+            else
+            {
+                Process.Start(Assembly.GetExecutingAssembly().Location);
+                Environment.Exit(0);
+            }
             GamePerformer.PlateControl();
-            GamePerformer.GameShow();
+            GamePerformer.GameStart();
             
-            // Console.WriteLine("сервер?");
-            //string m = Console.ReadLine();
-            //if (m == "y")
-            //{
-            //    сonnection = new ServerСonnection();
-            // }
-            // else if (m == "n")
-            // {
-            //     сonnection = new ClientСonnection();
-            // }
-            // else
-            //  {
-            //     Process.Start(Assembly.GetExecutingAssembly().Location);
-            //     Environment.Exit(0);
-            //  }
-            // сonnection.TransferGameData();
+            while (true)
+            {
+                //Console.WriteLine(сonnection.TransferGameData(Signal.Process, 12));
+                GamePerformer.GameShow();
+            }
         }
     }
     static class GamePerformer
@@ -77,6 +90,10 @@ namespace Ping_pong
         public static char[,] playingField = new char[30, 120];
         private static PlateDirection currentPlateDirection = PlateDirection.no;
         private static string c = String.Empty;
+        private static Plate userPlate;
+        private static Plate opponentPlate;
+        private static Ball ball;
+        private static PlateDirection opponentPlateBuffer;
 
         public static void PlateControl()
         {
@@ -100,58 +117,52 @@ namespace Ping_pong
                 }
             }).Start();
         }
+        public static void GameStart()
+        {
+            userPlate = new Plate();
+            opponentPlate = new Plate();
+            ball = new Ball();
+        }
         public static void GameShow()
         {
-            Plate userPlate = new Plate();
-            Plate opponentPlate = new Plate();
-            Ball ball = new Ball();
-            
 
-
-            while (true)
+            for (int i = 0; i < 30; i++)
             {
-                for (int i = 0; i < 30; i++)
+                for (int j = 0; j < 120; j++)
                 {
-                    for (int j = 0; j < 120; j++)
-                    {
-                        playingField[i, j] = ' ';
-                    }
+                    playingField[i, j] = ' ';
                 }
-
-                
-
-
-                userPlate.Move(playingField, PlateSide.left, currentPlateDirection);
-                opponentPlate.Move(playingField, PlateSide.right, PlateDirection.no);
-                ball.Move(playingField);
-
-
-                string temp = String.Empty;
-
-                for (int i = 0; i < 30; i++)
-                {
-                    for (int j = 0; j < 120; j++)
-                    {
-                        if (j % 119 == 0)
-                        {
-                            temp += playingField[i, j];
-                        }
-                        else
-                        {
-                            temp += playingField[i, j];
-                        }
-                    }
-                }
-                Console.Clear();
-                Console.Write(temp);
-                System.Threading.Thread.Sleep(1);
-
-
-
             }
-        }
 
-        
+
+
+            opponentPlateBuffer = (PlateDirection)Program.сonnection.TransferGameData(Signal.Process, (int)currentPlateDirection);
+            userPlate.Move(playingField, PlateSide.left, currentPlateDirection);
+            opponentPlate.Move(playingField, PlateSide.right, opponentPlateBuffer);
+            ball.Move(playingField);
+
+
+            string temp = String.Empty;
+
+            for (int i = 0; i < 30; i++)
+            {
+                for (int j = 0; j < 120; j++)
+                {
+                    if (j % 119 == 0)
+                    {
+                        temp += playingField[i, j];
+                    }
+                    else
+                    {
+                        temp += playingField[i, j];
+                    }
+                }
+            }
+            Console.Clear();
+            Console.Write(temp);
+            Thread.Sleep(1);
+
+        }
     }
     class Plate
     {
@@ -180,7 +191,7 @@ namespace Ping_pong
                     }
                     break;
             }
-
+           
             return plateSide switch
             {
                 PlateSide.left => RenderingLeftPlate(playingField),
@@ -227,6 +238,7 @@ namespace Ping_pong
     }
     class Ball
     {
+        
         private static readonly Dictionary<BallDirection, BallDirection> wallRebound
             = new Dictionary<BallDirection, BallDirection>()
             {
@@ -248,6 +260,7 @@ namespace Ping_pong
             };
         private int x;
         private int y;
+        private int startingDirection;
         private BallDirection moveDirection;
         public Ball()
         {
@@ -273,8 +286,6 @@ namespace Ping_pong
         }
         public char[,] Move(char[,] playingField)
         {
-           
-
             switch (moveDirection)
             {
                 case BallDirection.leftUp:
@@ -300,7 +311,6 @@ namespace Ping_pong
                     y -= 1;
                     break;
             }
-
             if (y == 1 || y == 28)
             {
                 moveDirection = wallRebound[moveDirection];
@@ -370,8 +380,10 @@ namespace Ping_pong
         {
             x = 60;
             y = 15;
-            moveDirection = (BallDirection)new Random()
-                .Next(Enum.GetNames(typeof(BallDirection)).Length);
+            startingDirection = new Random().Next(0, 3);
+            // moveDirection = (BallDirection)new Random()
+            //    .Next(Enum.GetNames(typeof(BallDirection)).Length);
+            moveDirection = (BallDirection)(startingDirection + Program.сonnection.TransferGameData(Signal.Start, startingDirection));
         }
         private char[,] RenderingBall(char[,] playingField)
         {
@@ -391,40 +403,54 @@ namespace Ping_pong
     }
     abstract class Сonnection
     {
-        abstract public void TransferGameData();
+        abstract public byte TransferGameData(Signal signal, int platePosition);
     }
     class ServerСonnection : Сonnection
     {
+        private int port;
         TcpListener serverSocket;
         TcpClient clientSocket;
         NetworkStream stream;
+        byte[] data = new byte[2];
         public ServerСonnection()
         {
-            serverSocket = new TcpListener(IPAddress.Any, 7000);
+            Console.Write("Введите port [7000]");
+            port = Convert.ToInt32(Console.ReadLine());
+            serverSocket = new TcpListener(IPAddress.Any, port);
             Console.WriteLine("Server started");
             serverSocket.Start();
             clientSocket = serverSocket.AcceptTcpClient();
-           // clientSocket.Close();
-            //serverSocket.Stop();
-            Console.WriteLine("Server stopped");
+
         }
-        public override void TransferGameData()
+        public override byte TransferGameData(Signal signal, int platePosition)
         {
             stream = clientSocket.GetStream();
-            byte[] data = { 12, 13, 14, 15, 16, 44, 55, 66 };
+            data[0] = Convert.ToByte(signal);
+            data[1] = Convert.ToByte(platePosition);
             stream.Write(data, 0, data.Length);
             stream.Flush();
+            stream.Read(data, 0, data.Length);
+            return data[1];
+
         }
     }
     class ClientСonnection : Сonnection
     {
+        private string ip;
+        private int port;
         TcpClient client;
         NetworkStream stream;
+        private byte[] data = new byte[2];
+
         public ClientСonnection()
         {
             try
             {
-                client = new TcpClient("127.0.0.1", 7000);
+                Console.Write("Введите ip [127.0.0.1]");
+                ip = Console.ReadLine();
+                Console.Write("Введите port [7000]");
+                port = Convert.ToInt32(Console.ReadLine());
+                client = new TcpClient(ip, port);
                 stream = client.GetStream();
             }
             catch (Exception e)
@@ -432,21 +458,23 @@ namespace Ping_pong
                 Console.WriteLine(e.Message);
             }
         }
-        public override void TransferGameData()
+        public override byte TransferGameData(Signal signal, int platePosition)
         {
             try
             {
-                byte[] data = new byte[256];
+
+                data[0] = Convert.ToByte(signal);
+                data[1] = Convert.ToByte(platePosition);
+                stream.Write(data, 0, data.Length);
+                stream.Flush();
                 stream.Read(data, 0, data.Length);
-                foreach (byte b in data)
-                    Console.Write(b + " ");
-                client.Close();
 
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
             }
+            return data[1];
         }
             
     }

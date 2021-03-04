@@ -4,7 +4,6 @@ C:\Users\zer01\Desktop\Ping_pong\Ping-pong\Ping-pong\bin\Release\netcoreapp3.1\P
 C:\Users\zer01\Desktop\Ping_pong\Ping-pong\Ping-pong\bin\Release\netcoreapp3.1\Ping-pong.runtimeconfig.dev.json
 C:\Users\zer01\Desktop\Ping_pong\Ping-pong\Ping-pong\bin\Release\netcoreapp3.1\Ping-pong.dll
 C:\Users\zer01\Desktop\Ping_pong\Ping-pong\Ping-pong\bin\Release\netcoreapp3.1\Ping-pong.pdb
-C:\Users\zer01\Desktop\Ping_pong\Ping-pong\Ping-pong\obj\Release\netcoreapp3.1\Ping-pong.csprojAssemblyReference.cache
 C:\Users\zer01\Desktop\Ping_pong\Ping-pong\Ping-pong\obj\Release\netcoreapp3.1\Ping-pong.AssemblyInfoInputs.cache
 C:\Users\zer01\Desktop\Ping_pong\Ping-pong\Ping-pong\obj\Release\netcoreapp3.1\Ping-pong.AssemblyInfo.cs
 C:\Users\zer01\Desktop\Ping_pong\Ping-pong\Ping-pong\obj\Release\netcoreapp3.1\Ping-pong.csproj.CoreCompileInputs.cache
