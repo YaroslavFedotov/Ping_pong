@@ -44,7 +44,8 @@ namespace Ping_pong
     {
         public const int ScreenWidth = 120;
         public const int ScreenHeight = 30;
-        public static Сonnection сonnection = null;
+        public static Object сonnection = null;
+        public static bool IsServer;
         static void Main(string[] args)
         {
             char[,] playingField = new char[ScreenHeight, ScreenWidth];
@@ -58,11 +59,15 @@ namespace Ping_pong
             string m = Console.ReadLine();
             if (m == "y" || m == "yes")
             {
-                сonnection = new ServerСonnection();
+                IsServer = true;
+                ServerСonnection.ServerStart();
+
             }
             else if (m == "n" || m == "no")
             {
-                сonnection = new ClientСonnection();
+                IsServer = false;
+                ClientСonnection.ClientStart();
+
             }
             else
             {
@@ -135,11 +140,28 @@ namespace Ping_pong
             }
 
 
+            if (Program.IsServer)
+            {
+                opponentPlateBuffer = (PlateDirection)ServerСonnection.TransferGameData(Signal.Process, (int)currentPlateDirection);
+                opponentPlate.Move(playingField, PlateSide.right, opponentPlateBuffer);
+                userPlate.Move(playingField, PlateSide.left, currentPlateDirection);
+                ball.Move(playingField);
+                ServerСonnection.TransferGameData(ball.GetBallData());
+            }
+            else
+            {
+                opponentPlateBuffer = (PlateDirection)ClientСonnection.TransferGameData(Signal.Process, (int)currentPlateDirection);
+                opponentPlate.Move(playingField, PlateSide.left, opponentPlateBuffer);
+                userPlate.Move(playingField, PlateSide.right, currentPlateDirection);
 
-            opponentPlateBuffer = (PlateDirection)Program.сonnection.TransferGameData(Signal.Process, (int)currentPlateDirection);
-            userPlate.Move(playingField, PlateSide.left, currentPlateDirection);
-            opponentPlate.Move(playingField, PlateSide.right, opponentPlateBuffer);
-            ball.Move(playingField);
+                ball.SetBallData(ClientСonnection.TransferGameData());
+                ball.RenderingBall(playingField);
+            }
+
+
+      
+
+
 
 
             string temp = String.Empty;
@@ -266,6 +288,16 @@ namespace Ping_pong
         {
             InitializationState();
         }
+        public byte[] GetBallData()
+        {
+            return new byte[3] { (byte)x, (byte)y, (byte)moveDirection };
+        }
+        public void SetBallData(byte[] data)
+        {
+            x = data[0];
+            y = data[1];
+            moveDirection = (BallDirection)data[2];
+        }
         private bool IsLeftMiddle()
         {
             if (GamePerformer.playingField[y + 3, x - 3] == '#'
@@ -380,12 +412,9 @@ namespace Ping_pong
         {
             x = 60;
             y = 15;
-            startingDirection = new Random().Next(0, 3);
-            // moveDirection = (BallDirection)new Random()
-            //    .Next(Enum.GetNames(typeof(BallDirection)).Length);
-            moveDirection = (BallDirection)(startingDirection + Program.сonnection.TransferGameData(Signal.Start, startingDirection));
+            startingDirection = new Random().Next(0, 6);
         }
-        private char[,] RenderingBall(char[,] playingField)
+        public char[,] RenderingBall(char[,] playingField)
         {
             playingField[y, x - 2] = '@';
             playingField[y + 1, x - 1] = '@';
@@ -401,19 +430,16 @@ namespace Ping_pong
             return playingField;
         }
     }
-    abstract class Сonnection
+    static class ServerСonnection
     {
-        abstract public byte TransferGameData(Signal signal, int platePosition);
-    }
-    class ServerСonnection : Сonnection
-    {
-        private int port;
-        TcpListener serverSocket;
-        TcpClient clientSocket;
-        NetworkStream stream;
-        byte[] data = new byte[2];
-        public ServerСonnection()
+        static private int port;
+        static TcpListener serverSocket;
+        static TcpClient clientSocket;
+        static NetworkStream stream;
+        static byte[] data = new byte[2];
+        static public void ServerStart()
         {
+      
             Console.Write("Введите port [7000]");
             port = Convert.ToInt32(Console.ReadLine());
             serverSocket = new TcpListener(IPAddress.Any, port);
@@ -422,7 +448,7 @@ namespace Ping_pong
             clientSocket = serverSocket.AcceptTcpClient();
 
         }
-        public override byte TransferGameData(Signal signal, int platePosition)
+        static public byte TransferGameData(Signal signal, int platePosition)
         {
             stream = clientSocket.GetStream();
             data[0] = Convert.ToByte(signal);
@@ -433,17 +459,30 @@ namespace Ping_pong
             return data[1];
 
         }
-    }
-    class ClientСonnection : Сonnection
-    {
-        private string ip;
-        private int port;
-        TcpClient client;
-        NetworkStream stream;
-        private byte[] data = new byte[2];
-
-        public ClientСonnection()
+        static public void TransferGameData(byte[] ballData)
         {
+            try
+            {
+                stream.Write(ballData, 0, ballData.Length);
+                stream.Flush();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+        }
+    }
+    static class ClientСonnection 
+    {
+        static private string ip;
+        static private int port;
+        static TcpClient client;
+        static NetworkStream stream;
+        static private byte[] data = new byte[2];
+
+        static public void ClientStart()
+        {
+
             try
             {
                 Console.Write("Введите ip [127.0.0.1]");
@@ -458,7 +497,7 @@ namespace Ping_pong
                 Console.WriteLine(e.Message);
             }
         }
-        public override byte TransferGameData(Signal signal, int platePosition)
+        static public byte TransferGameData(Signal signal, int platePosition)
         {
             try
             {
@@ -476,7 +515,13 @@ namespace Ping_pong
             }
             return data[1];
         }
-            
+        static public byte[] TransferGameData()
+        {
+            byte[] ballData = new byte[3];
+            stream.Read(ballData, 0, ballData.Length);
+            return ballData;
+        }
+
     }
 }
 
