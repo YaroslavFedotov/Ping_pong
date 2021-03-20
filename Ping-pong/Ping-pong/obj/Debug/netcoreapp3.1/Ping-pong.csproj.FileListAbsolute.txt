@@ -10,4 +10,3 @@ C:\Users\zer01\Desktop\Ping_pong\Ping-pong\Ping-pong\obj\Debug\netcoreapp3.1\Pin
 C:\Users\zer01\Desktop\Ping_pong\Ping-pong\Ping-pong\obj\Debug\netcoreapp3.1\Ping-pong.dll
 C:\Users\zer01\Desktop\Ping_pong\Ping-pong\Ping-pong\obj\Debug\netcoreapp3.1\Ping-pong.pdb
 C:\Users\zer01\Desktop\Ping_pong\Ping-pong\Ping-pong\obj\Debug\netcoreapp3.1\Ping-pong.genruntimeconfig.cache
-C:\Users\zer01\Desktop\Ping_pong\Ping-pong\Ping-pong\obj\Debug\netcoreapp3.1\Ping-pong.csprojAssemblyReference.cache

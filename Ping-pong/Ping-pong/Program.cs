@@ -162,21 +162,7 @@ namespace Ping_pong
                 }
             }
             GameIterating();
-            textImage = String.Empty;
-            for (int i = 0; i < 30; i++)
-            {
-                for (int j = 0; j < 120; j++)
-                {
-                    if (j % 119 == 0)
-                    {
-                        textImage += playingField[i, j];
-                    }
-                    else
-                    {
-                        textImage += playingField[i, j];
-                    }
-                }
-            }
+            textImage = new string(playingField.Cast<Char>().ToArray());
             Console.Clear();
             Console.Write(textImage);
             Thread.Sleep(1);
