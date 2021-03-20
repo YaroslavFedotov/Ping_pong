@@ -132,15 +132,8 @@ namespace Ping_pong
             ball = new Ball();
         }
 
-        public static void GameShow()
+        public static void GameIterating()
         {
-            for (int i = 0; i < 30; i++)
-            {
-                for (int j = 0; j < 120; j++)
-                {
-                    playingField[i, j] = ' ';
-                }
-            }
             if (Program.IsServer)
             {
                 opponentPlateBuffer = (PlateDirection)ServerСonnection.TransferGameData((int)currentPlateDirection);
@@ -157,6 +150,18 @@ namespace Ping_pong
                 ball.SetBallData(ClientСonnection.TransferGameData());
                 ball.RenderingBall(playingField);
             }
+        }
+
+        public static void GameShow()
+        {
+            for (int i = 0; i < 30; i++)
+            {
+                for (int j = 0; j < 120; j++)
+                {
+                    playingField[i, j] = ' ';
+                }
+            }
+            GameIterating();
             textImage = String.Empty;
             for (int i = 0; i < 30; i++)
             {
@@ -398,10 +403,7 @@ namespace Ping_pong
             {
                 InitializationState();
             }
-
             return RenderingBall(playingField);
-        
-
         }
 
         private void InitializationState()
